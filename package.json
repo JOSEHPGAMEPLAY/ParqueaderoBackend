@@ -1,0 +1,20 @@
+{
+  "name": "parqueadero-backend",
+  "version": "1.0.0",
+  "description": "Backend de proyecto parqueadero",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Jose Hernando Vera Jaimes",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "moment-timezone": "^0.5.45",
+    "mongoose": "^8.4.1"
+  }
+}
