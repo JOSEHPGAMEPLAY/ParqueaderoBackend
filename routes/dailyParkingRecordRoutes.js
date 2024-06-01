@@ -12,5 +12,8 @@ router.delete('/', authenticateToken, parkingController.deleteDailyParkingRecord
 // Ruta para calcular y actualizar el total ganado para un registro diario de parqueo
 router.put("/calculateTotalEarned/:dailyParkingRecordId", authenticateToken, parkingController.calculateTotalEarned);
 
+// Obtener todos los registros de parqueo de un regitro especifico
+router.get('/:id', authenticateToken, parkingController.getParkingRecordsById);
+
 
 module.exports = router;

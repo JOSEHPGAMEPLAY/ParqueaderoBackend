@@ -21,6 +21,26 @@ exports.getAllDailyParkingRecords = async (req, res) => {
     }
 };
 
+// Obtiene los carros parqueados en un registro
+exports.getParkingRecordsById = async (req, res) => {
+    try {
+        // Obtener el ID del registro diario de parqueo desde la solicitud
+        const { id } = req.params;
+
+        // Buscar el registro diario de parqueo y cargar toda la información de los carros parqueados
+        const parkingRecords = await DailyParkingRecord.findById(
+            id
+        ).populate("parkedCars");
+
+        if (!parkingRecords)
+            return res.status(404).json({ message: "Registro no encontrado" });
+
+        res.status(200).json(parkingRecords.parkedCars);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Elimina un registro diario
 exports.deleteParkingRecord = async (req, res) => {
     try {
@@ -55,7 +75,6 @@ exports.deleteDailyParkingRecord = async (req, res) => {
         const dailyParkingRecord = await DailyParkingRecord.findByIdAndDelete(
             id
         );
-        
 
         if (!dailyParkingRecord)
             return res
@@ -72,7 +91,7 @@ exports.deleteDailyParkingRecord = async (req, res) => {
 // Agrega un carro al parqueadero
 exports.addCarToParking = async (req, res) => {
     try {
-        const { plateNumber} = req.body;
+        const { plateNumber } = req.body;
 
         // Obtener la hora actual en UTC
         const currentTimeUTC = new Date();
@@ -102,7 +121,6 @@ exports.addCarToParking = async (req, res) => {
         let parkingRecord = await ParkingRecord.findOne({
             plateNumber: plateNumber,
             exitTime: null,
-
         });
 
         if (parkingRecord)
@@ -161,32 +179,6 @@ exports.calculatePrice = async (req, res) => {
     }
 };
 
-// Actualizar la placa del carro
-exports.updatePlateNumber = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { plateNumber } = req.body;
-
-        const parkingRecord = await ParkingRecord.findOne({
-            _id: id,
-            exitTime: null,
-        });
-        if (!parkingRecord)
-            return res.status(404).json({ message: "Registro no encontrado" });
-
-        parkingRecord.plateNumber = plateNumber;
-
-        await parkingRecord.save();
-
-        res.status(200).json({
-            message: "Placa de carro actualizada con exito",
-            parkingRecord,
-        });
-    } catch (error) {
-        res.satatus(500).json({ message: error.message });
-    }
-};
-
 // Calcula el total ganado
 exports.calculateTotalEarned = async (req, res) => {
     try {
@@ -223,23 +215,28 @@ exports.calculateTotalEarned = async (req, res) => {
     }
 };
 
-exports.getParkingRecordsByDate = async (req, res) => {
+// Actualizar la placa del carro
+exports.updatePlateNumber = async (req, res) => {
     try {
-        // Obtener el ID del registro diario de parqueo desde la solicitud
-        const { dailyParkingRecordId } = req.params;
+        const { id } = req.params;
+        const { plateNumber } = req.body;
 
-        DailyParkingRecord.findById(dailyParkingRecordId);
+        const parkingRecord = await ParkingRecord.findOne({
+            _id: id,
+            exitTime: null,
+        });
+        if (!parkingRecord)
+            return res.status(404).json({ message: "Registro no encontrado" });
 
-        for (const parkingRecord of dailyParkingRecord.parkedCars) {
-            totalEarned += parkingRecord.price;
-        }
-        // Buscar todos los registros de estacionamiento dentro del rango de tiempo del día deseado
-        const parkingRecords = await DailyParkingRecord.find({
-            date: { $gte: startOfDay, $lte: endOfDay },
-        }).populate("parkedCars"); // Puedes población los carros estacionados si es necesario
+        parkingRecord.plateNumber = plateNumber;
 
-        res.status(200).json({ parkingRecords });
+        await parkingRecord.save();
+
+        res.status(200).json({
+            message: "Placa de carro actualizada con exito",
+            parkingRecord,
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.satatus(500).json({ message: error.message });
     }
 };
