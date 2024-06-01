@@ -14,7 +14,7 @@ parkingRecordSchema.methods.calculatePrice = function () {
     const diffInHours = Math.ceil(
         (this.exitTime - this.entryTime) / (1000 * 60 * 60)
     );
-    return diffInHours * 1000;
+    return diffInHours * process.env.PRICE;
 };
 
 
