@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
+const cors = require("cors");
 const { connectDB } = require("./config");
 const authRoutes = require("./routes/authRoutes");
 const parkingRoutes = require("./routes/parkingRoutes");
@@ -14,6 +15,7 @@ dotenv.config();
 connectDB();
 
 // Middleware
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
