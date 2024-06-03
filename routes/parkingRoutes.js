@@ -15,7 +15,7 @@ router.put('/:id', authenticateToken, parkingController.updatePlateNumber);
 // Obtener todos los registros de parqueo
 router.get('/', authenticateToken, parkingController.getAllParkingRecords);
 
-// Eliminar un registro  de parqueo
+// Eliminar un registro de parqueo
 router.delete('/:id',authenticateToken, parkingController.deleteParkingRecord);
 
 module.exports = router;

@@ -28,9 +28,9 @@ exports.getParkingRecordsById = async (req, res) => {
         const { id } = req.params;
 
         // Buscar el registro diario de parqueo y cargar toda la información de los carros parqueados
-        const parkingRecords = await DailyParkingRecord.findById(
-            id
-        ).populate("parkedCars");
+        const parkingRecords = await DailyParkingRecord.findById(id).populate(
+            "parkedCars"
+        );
 
         if (!parkingRecords)
             return res.status(404).json({ message: "Registro no encontrado" });
@@ -41,7 +41,7 @@ exports.getParkingRecordsById = async (req, res) => {
     }
 };
 
-// Elimina un registro diario
+// Elimina un parqueo
 exports.deleteParkingRecord = async (req, res) => {
     try {
         const { id } = req.params;
@@ -72,15 +72,25 @@ exports.deleteDailyParkingRecord = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const dailyParkingRecord = await DailyParkingRecord.findByIdAndDelete(
+        const dailyParkingRecord = await DailyParkingRecord.findById(
             id
-        );
+        ).populate("parkedCars");
 
         if (!dailyParkingRecord)
             return res
                 .status(404)
                 .json({ message: "Registro de parqueo no encontrado" });
-        res.satatus(200).json({
+
+        
+        for (const parkingRecord of dailyParkingRecord.parkedCars) {
+            await ParkingRecord.findByIdAndDelete(parkingRecord._id);
+        }
+
+        await DailyParkingRecord.findByIdAndDelete(
+            id
+        )
+
+        res.status(200).json({
             message: "Registro de parqueo eliminado con exito",
         });
     } catch (error) {
@@ -183,11 +193,11 @@ exports.calculatePrice = async (req, res) => {
 exports.calculateTotalEarned = async (req, res) => {
     try {
         // Obtener el ID del registro diario de parqueo desde la solicitud
-        const { dailyParkingRecordId } = req.params;
+        const { id } = req.params;
 
         // Buscar el registro diario de parqueo por su ID y poblado con los registros de estacionamiento
         const dailyParkingRecord = await DailyParkingRecord.findById(
-            dailyParkingRecordId
+            id
         ).populate("parkedCars");
 
         if (!dailyParkingRecord) {
@@ -237,6 +247,6 @@ exports.updatePlateNumber = async (req, res) => {
             parkingRecord,
         });
     } catch (error) {
-        res.satatus(500).json({ message: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
