@@ -46,19 +46,19 @@ exports.deleteParkingRecord = async (req, res) => {
     try {
         const { id } = req.params;
         const parkingRecord = await ParkingRecord.findById(id);
-        const dailyRecordId = parkingRecord.dailyParkingRecord;
-        // Actualizar el registro diario para eliminar el carro estacionado
-        const updatedRecord = await DailyParkingRecord.findByIdAndUpdate(
-            dailyRecordId,
-            { $pull: { parkedCars: id } },
-            { new: true } // Para obtener el documento actualizado después de la actualización
-        );
-
+        
         if (!parkingRecord)
             return res
                 .status(404)
                 .json({ message: "Registro de parqueo no encontrado" });
-
+        const dailyRecordId = parkingRecord.dailyParkingRecord;
+        // Actualizar el registro diario para eliminar el carro estacionado
+        await DailyParkingRecord.findByIdAndUpdate(
+            dailyRecordId,
+            { $pull: { parkedCars: id } },
+            { new: true } // Para obtener el documento actualizado después de la actualización
+        );
+        await ParkingRecord.findByIdAndDelete(id);
         res.status(200).json({
             message: "Regitro de parqueo eliminado con éxito",
         });
@@ -81,14 +81,11 @@ exports.deleteDailyParkingRecord = async (req, res) => {
                 .status(404)
                 .json({ message: "Registro de parqueo no encontrado" });
 
-        
         for (const parkingRecord of dailyParkingRecord.parkedCars) {
             await ParkingRecord.findByIdAndDelete(parkingRecord._id);
         }
 
-        await DailyParkingRecord.findByIdAndDelete(
-            id
-        )
+        await DailyParkingRecord.findByIdAndDelete(id);
 
         res.status(200).json({
             message: "Registro de parqueo eliminado con exito",
@@ -101,7 +98,6 @@ exports.deleteDailyParkingRecord = async (req, res) => {
 // Agrega un registro
 exports.addDailyParking = async (req, res) => {
     try {
-        
         // Obtener la hora actual en UTC
         const currentTimeUTC = new Date();
 
@@ -124,7 +120,10 @@ exports.addDailyParking = async (req, res) => {
         }
         await dailyParkingRecord.save();
 
-        res.status(201).json({ message: "Registro creado con éxito", _id:dailyParkingRecord._id });
+        res.status(201).json({
+            message: "Registro creado con éxito",
+            _id: dailyParkingRecord._id,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
