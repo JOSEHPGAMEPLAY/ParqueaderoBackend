@@ -98,6 +98,38 @@ exports.deleteDailyParkingRecord = async (req, res) => {
     }
 };
 
+// Agrega un registro
+exports.addDailyParking = async (req, res) => {
+    try {
+        
+        // Obtener la hora actual en UTC
+        const currentTimeUTC = new Date();
+
+        // Obtener el desplazamiento de la zona horaria de Colombia en milisegundos
+        const offsetColombia = -300 * 60 * 1000; // UTC-5 (Bogotá)
+
+        // Obtener la fecha actual en la zona horaria de Colombia
+        const currentDate = new Date(currentTimeUTC.getTime() + offsetColombia);
+        currentDate.setUTCHours(0, 0, 0, 0); // Establecer la hora a 00:00:00 en la zona horaria de Colombia
+
+        // Buscar un registro diario basado en la fecha actual
+        let dailyParkingRecord = await DailyParkingRecord.findOne({
+            date: currentDate,
+        });
+
+        if (!dailyParkingRecord) {
+            dailyParkingRecord = new DailyParkingRecord({
+                date: currentDate,
+            });
+        }
+        await dailyParkingRecord.save();
+
+        res.status(201).json({ message: "Registro creado con éxito", _id:dailyParkingRecord._id });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Agrega un carro al parqueadero
 exports.addCarToParking = async (req, res) => {
     try {

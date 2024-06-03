@@ -3,6 +3,9 @@ const router = express.Router();
 const parkingController = require('../controllers/parkingController');
 const authenticateToken = require('../middleware/auth');
 
+// Obtener todos los registros de parqueo
+router.get('/', authenticateToken, parkingController.getAllParkingRecords);
+
 // Agregar un carro al parqueadero
 router.post('/',authenticateToken, parkingController.addCarToParking);
 
@@ -11,9 +14,6 @@ router.put('/calculatePrice', authenticateToken, parkingController.calculatePric
 
 // Actualizar la placa de un carro 
 router.put('/:id', authenticateToken, parkingController.updatePlateNumber);
-
-// Obtener todos los registros de parqueo
-router.get('/', authenticateToken, parkingController.getAllParkingRecords);
 
 // Eliminar un registro de parqueo
 router.delete('/:id',authenticateToken, parkingController.deleteParkingRecord);
