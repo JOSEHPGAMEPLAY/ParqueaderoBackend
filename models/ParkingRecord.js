@@ -8,7 +8,7 @@ const parkingRecordSchema = new mongoose.Schema({
     dailyParkingRecord: {type:mongoose.Schema.Types.ObjectId, ref:'DailyPakingRecord'}
 });
 
-// Metodo para calcular el price
+// Metodo para calcular el precio
 parkingRecordSchema.methods.calculatePrice = function () {
     if (!this.exitTime) return 0;
 
@@ -33,7 +33,7 @@ parkingRecordSchema.methods.calculatePrice = function () {
 };
 
 
-// Middleware para calcular el price antes de guardar
+// Middleware para calcular el precio antes de guardar
 parkingRecordSchema.pre('save', function(next){
     this.price = this.calculatePrice();
     next();

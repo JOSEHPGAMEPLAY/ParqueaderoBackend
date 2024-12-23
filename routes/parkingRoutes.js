@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const parkingController = require('../controllers/parkingController');
 const authenticateToken = require('../middleware/auth');
+const roleCheck = require('../middleware/role');
 
 // Obtener todos los registros de parqueo
 router.get('/', authenticateToken, parkingController.getAllParkingRecords);
@@ -16,6 +17,6 @@ router.put('/calculatePrice', authenticateToken, parkingController.calculatePric
 router.put('/:id', authenticateToken, parkingController.updatePlateNumber);
 
 // Eliminar un registro de parqueo
-router.delete('/:id',authenticateToken, parkingController.deleteParkingRecord);
+router.delete('/:id',authenticateToken, roleCheck(['admin', 'owner']), parkingController.deleteParkingRecord);
 
 module.exports = router;
