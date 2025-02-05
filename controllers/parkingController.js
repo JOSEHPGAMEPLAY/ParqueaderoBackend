@@ -186,7 +186,7 @@ exports.addCarToParking = async (req, res) => {
 // Calcular el precio al salir del parqueadero
 exports.calculatePrice = async (req, res) => {
     try {
-        const { plateNumber } = req.body;
+        const { plateNumber, isFree } = req.body;
 
         const parkingRecord = await ParkingRecord.findOne({
             plateNumber,
@@ -209,6 +209,8 @@ exports.calculatePrice = async (req, res) => {
         const exitTime = new Date(currentTimeUTC.getTime() + offsetColombia);
 
         parkingRecord.exitTime = exitTime;
+
+        parkingRecord.isFree = isFree;
 
         await parkingRecord.save();
 
