@@ -11,7 +11,7 @@ router.get('/', authenticateToken, parkingController.getAllParkingRecords);
 router.post('/',authenticateToken, parkingController.addCarToParking);
 
 // Calcular el precio al salir del parqueadero
-router.put('/calculatePrice', authenticateToken, parkingController.calculatePrice);
+router.put('/calculatePrice', authenticateToken, parkingController.calculatePrice,);
 
 // Actualizar la placa de un carro 
 router.put('/:id', authenticateToken, parkingController.updatePlateNumber);

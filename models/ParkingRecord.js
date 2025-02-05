@@ -5,11 +5,14 @@ const parkingRecordSchema = new mongoose.Schema({
     entryTime: { type: Date, required: true },
     exitTime: { type: Date, default: null },
     price: { type: Number, default: 0,required: true },
+    isFree: { type: Boolean, default: false },
     dailyParkingRecord: {type:mongoose.Schema.Types.ObjectId, ref:'DailyPakingRecord'}
 });
 
 // Metodo para calcular el precio
 parkingRecordSchema.methods.calculatePrice = function () {
+    if (this.isFree) return 0;
+
     if (!this.exitTime) return 0;
 
     const millisecondsInHour = 1000 * 60 * 60;
