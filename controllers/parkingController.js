@@ -11,6 +11,16 @@ exports.getAllParkingRecords = async (req, res) => {
     }
 };
 
+// Obtiene todos los registros activos de parqueo
+exports.getAllAcitveParkingRecords = async (req, res) => {
+    try {
+        const records = await ParkingRecord.find({exitTime:null});
+        res.json(records);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Obtiene todos los registros diarios
 exports.getAllDailyParkingRecords = async (req, res) => {
     try {
