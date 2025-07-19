@@ -1,7 +1,13 @@
 const jwt = require('jsonwebtoken');
 
 const authenticatedToken = (req, res, next) =>{
-    const token = req.header('Authorization').replace('Bearer ','');
+    const authHeader = req.header('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Token no proporcionado o malformado' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
 
     if (!token) return res.status(401).json({message:'Acceso denegado'});
 
@@ -10,7 +16,7 @@ const authenticatedToken = (req, res, next) =>{
         req.user = verifed;
         next();
     } catch (error) {
-        res.status(400).json({message: error.message});
+        res.status(400).json({ message: 'Token inválido o expirado' });
     }
 };
 
