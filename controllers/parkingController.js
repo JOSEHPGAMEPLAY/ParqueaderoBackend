@@ -4,7 +4,8 @@ const DailyParkingRecord = require("../models/DailyParkingRecord");
 // Obtiene todos los carros parqueados
 exports.getAllParkingRecords = async (req, res) => {
     try {
-        const records = await ParkingRecord.find();
+        const records = await ParkingRecord.find()
+            .sort({ entryTime: -1 });;
         res.json(records);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -14,7 +15,8 @@ exports.getAllParkingRecords = async (req, res) => {
 // Obtiene todos los registros activos de parqueo
 exports.getAllAcitveParkingRecords = async (req, res) => {
     try {
-        const records = await ParkingRecord.find({exitTime:null});
+        const records = await ParkingRecord.find({exitTime:null})
+            .sort({ entryTime: -1 });
         res.json(records);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -24,7 +26,8 @@ exports.getAllAcitveParkingRecords = async (req, res) => {
 // Obtiene todos los registros diarios
 exports.getAllDailyParkingRecords = async (req, res) => {
     try {
-        const records = await DailyParkingRecord.find();
+        const records = await DailyParkingRecord.find()
+            .sort({ date: -1 });
         res.json(records);
     } catch (error) {
         res.status(500).json({ message: error.message });
