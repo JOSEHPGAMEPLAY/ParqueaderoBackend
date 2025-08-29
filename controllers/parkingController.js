@@ -1,3 +1,4 @@
+const { getColombiaDateAndTime } = require('../utils/dateUtils');
 const ParkingRecord = require("../models/ParkingRecord");
 const DailyParkingRecord = require("../models/DailyParkingRecord");
 
@@ -111,15 +112,7 @@ exports.deleteDailyParkingRecord = async (req, res) => {
 // Agrega un registro
 exports.addDailyParking = async (req, res) => {
     try {
-        // Obtener la hora actual en UTC
-        const currentTimeUTC = new Date();
-
-        // Obtener el desplazamiento de la zona horaria de Colombia en milisegundos
-        const offsetColombia = -300 * 60 * 1000; // UTC-5 (Bogotá)
-
-        // Obtener la fecha actual en la zona horaria de Colombia
-        const currentDate = new Date(currentTimeUTC.getTime() + offsetColombia);
-        currentDate.setUTCHours(0, 0, 0, 0); // Establecer la hora a 00:00:00 en la zona horaria de Colombia
+        const { currentDate } = getColombiaDateAndTime();
 
         // Buscar un registro diario basado en la fecha actual
         let dailyParkingRecord = await DailyParkingRecord.findOne({
@@ -147,19 +140,8 @@ exports.addCarToParking = async (req, res) => {
     try {
         const { plateNumber } = req.body;
 
-        // Obtener la hora actual en UTC
-        const currentTimeUTC = new Date();
-
-        // Obtener el desplazamiento de la zona horaria de Colombia en milisegundos
-        const offsetColombia = -300 * 60 * 1000; // UTC-5 (Bogotá)
-
-        // Crear un nuevo objeto Date con la hora en la zona horaria de Colombia
-        const entryTime = new Date(currentTimeUTC.getTime() + offsetColombia);
-
-        // Obtener la fecha actual en la zona horaria de Colombia
-        const currentDate = new Date(currentTimeUTC.getTime() + offsetColombia);
-        currentDate.setUTCHours(0, 0, 0, 0); // Establecer la hora a 00:00:00 en la zona horaria de Colombia
-
+        const { entryTime, currentDate } = getColombiaDateAndTime();
+    
         // Buscar un registro diario basado en la fecha actual
         let dailyParkingRecord = await DailyParkingRecord.findOne({
             date: currentDate,
@@ -212,15 +194,8 @@ exports.calculatePrice = async (req, res) => {
                 .json({ message: "El carro no se ah encontrado" });
         }
 
-        // Obtener la hora actual en UTC
-        const currentTimeUTC = new Date();
-
-        // Obtener el desplazamiento de la zona horaria de Colombia en milisegundos
-        const offsetColombia = -300 * 60 * 1000; // UTC-5 (Bogotá)
-
-        // Crear un nuevo objeto Date con la hora en la zona horaria de Colombia
-        const exitTime = new Date(currentTimeUTC.getTime() + offsetColombia);
-
+        const { entryTime: exitTime } = getColombiaDateAndTime();
+        
         parkingRecord.exitTime = exitTime;
 
         parkingRecord.isFree = isFree;
