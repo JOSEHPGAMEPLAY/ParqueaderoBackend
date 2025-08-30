@@ -2,7 +2,7 @@ const { getColombiaDateAndTime } = require('../utils/dateUtils');
 const ParkingRecord = require("../models/ParkingRecord");
 const DailyParkingRecord = require("../models/DailyParkingRecord");
 
-// Obtiene todos los carros parqueados
+// Obtiene todos los vehiculos parqueados
 exports.getAllParkingRecords = async (req, res) => {
     try {
         const records = await ParkingRecord.find()
@@ -35,13 +35,13 @@ exports.getAllDailyParkingRecords = async (req, res) => {
     }
 };
 
-// Obtiene los carros parqueados en un registro
+// Obtiene los vehiculos parqueados en un registro
 exports.getParkingRecordsById = async (req, res) => {
     try {
         // Obtener el ID del registro diario de parqueo desde la solicitud
         const { id } = req.params;
 
-        // Buscar el registro diario de parqueo y cargar toda la información de los carros parqueados
+        // Buscar el registro diario de parqueo y cargar toda la información de los vehiculos parqueados
         const parkingRecords = await DailyParkingRecord.findById(id).populate(
             "parkedCars"
         );
@@ -66,7 +66,7 @@ exports.deleteParkingRecord = async (req, res) => {
                 .status(404)
                 .json({ message: "Registro de parqueo no encontrado" });
         const dailyRecordId = parkingRecord.dailyParkingRecord;
-        // Actualizar el registro diario para eliminar el carro estacionado
+        // Actualizar el registro diario para eliminar el vehiculo estacionado
         await DailyParkingRecord.findByIdAndUpdate(
             dailyRecordId,
             { $pull: { parkedCars: id } },
@@ -135,7 +135,7 @@ exports.addDailyParking = async (req, res) => {
     }
 };
 
-// Agrega un carro al parqueadero
+// Agrega un vehiculo al parqueadero
 exports.addCarToParking = async (req, res) => {
     try {
         const { plateNumber } = req.body;
@@ -160,7 +160,7 @@ exports.addCarToParking = async (req, res) => {
         });
 
         if (parkingRecord)
-            return res.status(404).json({ message: "El carro ya ingreso" });
+            return res.status(404).json({ message: "El vehiculo ya ingreso" });
 
         parkingRecord = new ParkingRecord({
             plateNumber,
@@ -172,7 +172,7 @@ exports.addCarToParking = async (req, res) => {
         await parkingRecord.save();
         await dailyParkingRecord.save();
 
-        res.status(201).json({ message: "Carro ingresado con éxito" });
+        res.status(201).json({ message: "vehiculo ingresado con éxito" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -191,7 +191,7 @@ exports.calculatePrice = async (req, res) => {
         if (!parkingRecord) {
             return res
                 .status(404)
-                .json({ message: "El carro no se ah encontrado" });
+                .json({ message: "El vehiculo no se ah encontrado" });
         }
 
         const { entryTime: exitTime } = getColombiaDateAndTime();
@@ -246,7 +246,7 @@ exports.calculateTotalEarned = async (req, res) => {
     }
 };
 
-// Actualizar la placa del carro
+// Actualizar la placa del vehiculo
 exports.updatePlateNumber = async (req, res) => {
     try {
         const { id } = req.params;
@@ -264,7 +264,7 @@ exports.updatePlateNumber = async (req, res) => {
         await parkingRecord.save();
 
         res.status(200).json({
-            message: "Placa de carro actualizada con exito",
+            message: "Placa de vehiculo actualizada con exito",
             parkingRecord,
         });
     } catch (error) {
