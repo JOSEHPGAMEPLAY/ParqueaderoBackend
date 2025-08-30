@@ -40,18 +40,20 @@ exports.login = async function (req,res){
         
         // Generar el token JWT
         const token = jwt.sign(
-            {userId: user._id, role: user.role},
+            {userId: user._id, username: user.username ,role: user.role},
             process.env.JWT_SECRET,
             {expiresIn:process.env.JWT_EXPIRATION,}
         );
 
         const maxAge = ms(process.env.JWT_EXPIRATION);
 
+        const isProd = process.env.NODE_ENV === "production";
+
         // Guardar el token en una cookie segura
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax",
             maxAge
         });
 
@@ -78,12 +80,12 @@ exports.logout = async function (req, res) {
 
 exports.getCurrentUser = async function (req, res) {
     const token = req.cookies?.token;
-    if (!token) return res.status(401).json({ message: "Unauthorized" });
+    if (!token) return res.status(401).json({ message: "No autorizado, no hay token" });
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        res.status(200).json(decoded);
+        return res.status(200).json({ valid: true, user: decoded });
     } catch {
-        res.status(401).json({ message: "Invalid token" });
+        return res.status(401).json({ valid: false, message: "Token inválido o expirado" });
     }
 }
