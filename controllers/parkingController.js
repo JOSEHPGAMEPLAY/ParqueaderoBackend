@@ -1,10 +1,23 @@
+const { getColombiaDateAndTime } = require('../utils/dateUtils');
 const ParkingRecord = require("../models/ParkingRecord");
 const DailyParkingRecord = require("../models/DailyParkingRecord");
 
-// Obtiene todos los carros parqueados
+// Obtiene todos los vehiculos parqueados
 exports.getAllParkingRecords = async (req, res) => {
     try {
-        const records = await ParkingRecord.find();
+        const records = await ParkingRecord.find()
+            .sort({ entryTime: -1 });;
+        res.json(records);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Obtiene todos los registros activos de parqueo
+exports.getAllAcitveParkingRecords = async (req, res) => {
+    try {
+        const records = await ParkingRecord.find({exitTime:null})
+            .sort({ entryTime: -1 });
         res.json(records);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -14,20 +27,21 @@ exports.getAllParkingRecords = async (req, res) => {
 // Obtiene todos los registros diarios
 exports.getAllDailyParkingRecords = async (req, res) => {
     try {
-        const records = await DailyParkingRecord.find();
+        const records = await DailyParkingRecord.find()
+            .sort({ date: -1 });
         res.json(records);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// Obtiene los carros parqueados en un registro
+// Obtiene los vehiculos parqueados en un registro
 exports.getParkingRecordsById = async (req, res) => {
     try {
         // Obtener el ID del registro diario de parqueo desde la solicitud
         const { id } = req.params;
 
-        // Buscar el registro diario de parqueo y cargar toda la información de los carros parqueados
+        // Buscar el registro diario de parqueo y cargar toda la información de los vehiculos parqueados
         const parkingRecords = await DailyParkingRecord.findById(id).populate(
             "parkedCars"
         );
@@ -52,7 +66,7 @@ exports.deleteParkingRecord = async (req, res) => {
                 .status(404)
                 .json({ message: "Registro de parqueo no encontrado" });
         const dailyRecordId = parkingRecord.dailyParkingRecord;
-        // Actualizar el registro diario para eliminar el carro estacionado
+        // Actualizar el registro diario para eliminar el vehiculo estacionado
         await DailyParkingRecord.findByIdAndUpdate(
             dailyRecordId,
             { $pull: { parkedCars: id } },
@@ -98,15 +112,7 @@ exports.deleteDailyParkingRecord = async (req, res) => {
 // Agrega un registro
 exports.addDailyParking = async (req, res) => {
     try {
-        // Obtener la hora actual en UTC
-        const currentTimeUTC = new Date();
-
-        // Obtener el desplazamiento de la zona horaria de Colombia en milisegundos
-        const offsetColombia = -300 * 60 * 1000; // UTC-5 (Bogotá)
-
-        // Obtener la fecha actual en la zona horaria de Colombia
-        const currentDate = new Date(currentTimeUTC.getTime() + offsetColombia);
-        currentDate.setUTCHours(0, 0, 0, 0); // Establecer la hora a 00:00:00 en la zona horaria de Colombia
+        const { currentDate } = getColombiaDateAndTime();
 
         // Buscar un registro diario basado en la fecha actual
         let dailyParkingRecord = await DailyParkingRecord.findOne({
@@ -129,24 +135,13 @@ exports.addDailyParking = async (req, res) => {
     }
 };
 
-// Agrega un carro al parqueadero
+// Agrega un vehiculo al parqueadero
 exports.addCarToParking = async (req, res) => {
     try {
         const { plateNumber } = req.body;
 
-        // Obtener la hora actual en UTC
-        const currentTimeUTC = new Date();
-
-        // Obtener el desplazamiento de la zona horaria de Colombia en milisegundos
-        const offsetColombia = -300 * 60 * 1000; // UTC-5 (Bogotá)
-
-        // Crear un nuevo objeto Date con la hora en la zona horaria de Colombia
-        const entryTime = new Date(currentTimeUTC.getTime() + offsetColombia);
-
-        // Obtener la fecha actual en la zona horaria de Colombia
-        const currentDate = new Date(currentTimeUTC.getTime() + offsetColombia);
-        currentDate.setUTCHours(0, 0, 0, 0); // Establecer la hora a 00:00:00 en la zona horaria de Colombia
-
+        const { entryTime, currentDate } = getColombiaDateAndTime();
+    
         // Buscar un registro diario basado en la fecha actual
         let dailyParkingRecord = await DailyParkingRecord.findOne({
             date: currentDate,
@@ -165,7 +160,7 @@ exports.addCarToParking = async (req, res) => {
         });
 
         if (parkingRecord)
-            return res.status(404).json({ message: "El carro ya ingreso" });
+            return res.status(404).json({ message: "El vehiculo ya ingreso" });
 
         parkingRecord = new ParkingRecord({
             plateNumber,
@@ -177,7 +172,7 @@ exports.addCarToParking = async (req, res) => {
         await parkingRecord.save();
         await dailyParkingRecord.save();
 
-        res.status(201).json({ message: "Carro ingresado con éxito" });
+        res.status(201).json({ message: "vehiculo ingresado con éxito" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -196,18 +191,11 @@ exports.calculatePrice = async (req, res) => {
         if (!parkingRecord) {
             return res
                 .status(404)
-                .json({ message: "El carro no se ah encontrado" });
+                .json({ message: "El vehiculo no se ah encontrado" });
         }
 
-        // Obtener la hora actual en UTC
-        const currentTimeUTC = new Date();
-
-        // Obtener el desplazamiento de la zona horaria de Colombia en milisegundos
-        const offsetColombia = -300 * 60 * 1000; // UTC-5 (Bogotá)
-
-        // Crear un nuevo objeto Date con la hora en la zona horaria de Colombia
-        const exitTime = new Date(currentTimeUTC.getTime() + offsetColombia);
-
+        const { entryTime: exitTime } = getColombiaDateAndTime();
+        
         parkingRecord.exitTime = exitTime;
 
         parkingRecord.isFree = isFree;
@@ -258,7 +246,7 @@ exports.calculateTotalEarned = async (req, res) => {
     }
 };
 
-// Actualizar la placa del carro
+// Actualizar la placa del vehiculo
 exports.updatePlateNumber = async (req, res) => {
     try {
         const { id } = req.params;
@@ -276,7 +264,7 @@ exports.updatePlateNumber = async (req, res) => {
         await parkingRecord.save();
 
         res.status(200).json({
-            message: "Placa de carro actualizada con exito",
+            message: "Placa de vehiculo actualizada con exito",
             parkingRecord,
         });
     } catch (error) {

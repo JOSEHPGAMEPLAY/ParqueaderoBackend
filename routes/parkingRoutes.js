@@ -7,13 +7,16 @@ const roleCheck = require('../middleware/role');
 // Obtener todos los registros de parqueo
 router.get('/', authenticateToken, parkingController.getAllParkingRecords);
 
-// Agregar un carro al parqueadero
+// Obtener todos los registros de parqueo
+router.get('/active', authenticateToken, parkingController.getAllAcitveParkingRecords);
+
+// Agregar un vehiculo al parqueadero
 router.post('/',authenticateToken, parkingController.addCarToParking);
 
 // Calcular el precio al salir del parqueadero
-router.put('/calculatePrice', authenticateToken, parkingController.calculatePrice,);
+router.put('/calculateprice', authenticateToken, parkingController.calculatePrice,);
 
-// Actualizar la placa de un carro 
+// Actualizar la placa de un vehiculo 
 router.put('/:id', authenticateToken, parkingController.updatePlateNumber);
 
 // Eliminar un registro de parqueo

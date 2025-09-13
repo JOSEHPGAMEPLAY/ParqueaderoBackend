@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const ms = require("ms");
 
 // Registro 
 exports.register = async (req, res)  => {
@@ -38,11 +39,53 @@ exports.login = async function (req,res){
         if (!isMatch) return res.status(400).json({message: "Usuario o contarseña incorrectos"});
         
         // Generar el token JWT
-        const token = jwt.sign({userId: user._id, role: user.role}, process.env.JWT_SECRET,{
-            expiresIn:process.env.JWT_EXPIRATION,
+        const token = jwt.sign(
+            {userId: user._id, username: user.username ,role: user.role},
+            process.env.JWT_SECRET,
+            {expiresIn:process.env.JWT_EXPIRATION,}
+        );
+
+        const maxAge = ms(process.env.JWT_EXPIRATION);
+
+        const isProd = process.env.NODE_ENV === "production";
+
+        // Guardar el token en una cookie segura
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax",
+            maxAge
         });
-        res.status(200).json({token})
+
+        res.status(200).json({message: "Login exitoso"});
     } catch (error) {
         res.status(500).json({message: error.message});
     }
 };
+
+// Logout
+exports.logout = async function (req, res) {
+    try {
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict"
+        });
+
+        res.status(200).json({message: "Sesión cerrada"});
+    } catch (error) {
+        res.status(500).json({message: error.message});
+    }
+}
+
+exports.getCurrentUser = async function (req, res) {
+    const token = req.cookies?.token;
+    if (!token) return res.status(401).json({ message: "No autorizado, no hay token" });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return res.status(200).json({ valid: true, user: decoded });
+    } catch {
+        return res.status(401).json({ valid: false, message: "Token inválido o expirado" });
+    }
+}
