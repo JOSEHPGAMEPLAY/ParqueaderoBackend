@@ -52,8 +52,8 @@ exports.login = async function (req,res){
         // Guardar el token en una cookie segura
         res.cookie("token", token, {
             httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "lax",
+            secure: false,
+            sameSite: "lax",
             maxAge
         });
 
@@ -68,7 +68,7 @@ exports.logout = async function (req, res) {
     try {
         res.clearCookie("token", {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: false,
             sameSite: "strict"
         });
 
