@@ -19,13 +19,6 @@ connectDB();
 // Middleware
 app.use(cors({
   origin: (origin, callback) => {
-    // Si tienes CLIENT_URL en .env, forzar ese origen
-    if (process.env.CLIENT_URL) {
-      if (origin === process.env.CLIENT_URL) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS: " + origin));
-    }
     
     if (!origin) return callback(null, true);
     if (

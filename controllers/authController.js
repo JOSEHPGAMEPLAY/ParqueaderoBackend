@@ -47,6 +47,8 @@ exports.login = async function (req,res){
 
         const maxAge = ms(process.env.JWT_EXPIRATION);
 
+        const isProd = process.env.NODE_ENV === "production";
+
         // Guardar el token en una cookie segura
         res.cookie("token", token, {
             httpOnly: true,
