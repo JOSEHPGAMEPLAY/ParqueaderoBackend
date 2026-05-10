@@ -44,7 +44,7 @@ app.use("/api/dailyParkingRecord", dailyParkingRecordRoutes);
 app.use("/api/parking", parkingRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
-app.use("/api/comment-parking-record", commentParkingRecordRoutes);
+app.use("/api/parking/comment", commentParkingRecordRoutes);
 
 const PORT = port;
 app.listen(PORT, () => {
