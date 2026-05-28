@@ -20,7 +20,10 @@ const userService = {
     return User.find();
   },
 
-  async changePassword(userId, oldPassword, newPassword) {
+  async changePassword(userId, oldPassword, newPassword, requesterId) {
+    if (requesterId !== userId.toString()) {
+        throw AppError.forbidden('No tienes permiso para cambiar la contraseña de este usuario');
+    }
     const user = await this.findById(userId);
     const isMatch = await user.comparePassword(oldPassword);
     if (!isMatch) throw AppError.badRequest('Contraseña actual incorrecta');
@@ -31,16 +34,17 @@ const userService = {
   },
 
   async resetPassword(targetUser, requesterRole, requesterId) {
-    if (requesterRole === ROLES.ADMIN && targetUser.role !== ROLES.USER) {
-      throw AppError.forbidden('No tienes permiso para cambiar la contraseña de este usuario');
-    }
-    if (
-      requesterRole === ROLES.OWNER &&
-      targetUser.role === ROLES.OWNER &&
-      requesterId !== targetUser._id.toString()
-    ) {
-      throw AppError.forbidden('No puedes cambiar la contraseña de otro owner');
-    }
+		if (requesterId !== targetUser._id.toString()) {		
+			if (requesterRole === ROLES.ADMIN && targetUser.role !== ROLES.USER) {
+				throw AppError.forbidden('No tienes permiso para cambiar la contraseña de este usuario');
+			}
+			if (
+				requesterRole === ROLES.OWNER &&
+				targetUser.role === ROLES.OWNER
+			) {
+				throw AppError.forbidden('No puedes cambiar la contraseña de otro owner');
+			}
+		}
   },
 
   async hashPassword(password) {
@@ -48,10 +52,32 @@ const userService = {
     return bcrypt.hash(password, salt);
   },
 
-  async update(userId, data) {
+  async update(userId, data, requesterId, requesterRole) {
     const user = await this.findById(userId);
+    if (requesterId !== userId) {
+      if (requesterRole === ROLES.USER) {
+        throw AppError.forbidden('No tienes permiso para actualizar este usuario');
+      }
+      if (
+        requesterRole === ROLES.ADMIN &&
+        user.role !== ROLES.USER
+      ) {
+        throw AppError.forbidden('No tienes permiso para actualizar este usuario');
+      }
+      if (requesterRole === ROLES.OWNER && user.role === ROLES.OWNER) {
+        throw AppError.forbidden('No tienes permiso para actualizar este usuario');
+      }
+    }
     if (data.username) user.username = data.username;
-    if (data.role) user.role = data.role;
+    if (data.role) {
+      if (requesterRole === ROLES.USER) {
+        throw AppError.forbidden('No tienes permiso para cambiar el rol');
+      }
+      if (requesterRole === ROLES.ADMIN && data.role === ROLES.OWNER) {
+        throw AppError.forbidden('No tienes permiso para cambiar el rol');
+      }
+      user.role = data.role;
+    }
     await user.save();
     return user;
   },
@@ -59,11 +85,27 @@ const userService = {
   async toggleActivation(targetUser, requesterRole) {
     if (
       requesterRole === ROLES.ADMIN &&
-      (targetUser.role === ROLES.OWNER || targetUser.role === ROLES.ADMIN)
-    ) {
+      targetUser.role !== ROLES.USER) {
       throw AppError.forbidden('No tienes permiso para cambiar el estado de este usuario');
     }
+    if (requesterRole === ROLES.OWNER && targetUser.role === ROLES.OWNER) {
+      throw AppError.forbidden('No puedes cambiar el estado de este usuario');
+    }
     return User.toggleUserStatus(targetUser._id, !targetUser.isActive);
+  },
+
+  async deleteUser(userId, requesterRole, requesterId) {
+    const targetUser = await this.findById(userId);
+    if (requesterId === userId) {
+      throw AppError.badRequest('No puedes eliminarte a ti mismo');
+    }
+    if (requesterRole === ROLES.ADMIN && targetUser.role !== ROLES.USER) {
+      throw AppError.forbidden('No tienes permiso para eliminar este usuario');
+    }
+    if (requesterRole === ROLES.OWNER && targetUser.role === ROLES.OWNER) {
+      throw AppError.forbidden('No tienes permiso para eliminar este usuario');
+    }
+    await User.findByIdAndDelete(userId);
   },
 
   async register(username, password) {
