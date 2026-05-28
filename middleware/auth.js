@@ -1,19 +1,19 @@
 const jwt = require('jsonwebtoken');
 
-const authenticatedToken = (req, res, next) =>{
-    token = req.cookies?.token;
-    
-    if (!token) {
-        return res.status(401).json({ message: 'Token no proporcionado' });
-    }
+const authenticateToken = (req, res, next) => {
+  const token = req.cookies?.token;
 
-    try {
-        const verifed = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = verifed;
-        next();
-    } catch (error) {
-        res.status(400).json({ message: 'Token inválido o expirado' });
-    }
+  if (!token) {
+    return res.status(401).json({ message: 'Token no proporcionado' });
+  }
+
+  try {
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verified;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Token inválido o expirado' });
+  }
 };
 
-module.exports = authenticatedToken;
+module.exports = authenticateToken;

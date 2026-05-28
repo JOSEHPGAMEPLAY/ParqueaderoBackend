@@ -1,91 +1,48 @@
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
-const ms = require("ms");
+const authService = require('../services/authService');
+const userService = require('../services/userService');
+const { wrapAsync } = require('../utils/errors');
 
-// Registro 
-exports.register = async (req, res)  => {
-     const {username, password} = req.body;
-    try {
+const authController = {
+  register: wrapAsync(async (req, res) => {
+    const { username, password } = req.body;
+    await userService.register(username, password);
+    res.status(201).json({ message: 'Usuario registrado con éxito' });
+  }),
 
-        const existingUser = await User.findOne({username});
+  login: wrapAsync(async (req, res) => {
+    const { username, password } = req.body;
 
-        if (existingUser) return res.status(400).json({message: "El usuario ya existe"});
-
-        const newUser = new User({username, password});
-        await newUser.save();
-
-        res.status(201).json({message:'Usuario registrado con éxito'});
-    } catch (error) {
-        res.status(500).json({message: error.message});
+    const user = await userService.findByUsername(username);
+    if (!user) {
+      return res.status(400).json({ message: 'Usuario o contraseña incorrectos' });
     }
-};
-
-// Login
-exports.login = async function (req,res){
-    const {username, password} = req.body;
-
-    try {
-        // Verificar si el usuario existe
-        const user = await User.findOne({username});
-        if (!user) return res.status(400).json({message: "Usuario o contarseña incorrectos"}); 
-
-        // Verificar si el usuario está habilitado
-        if (!user.isActive) {
-            return res.status(403).json({ message: "Usuario deshabilitado. Contacte al administrador." });
-        }
-
-        // Verificar si la contraseña es correcta  (comparación con la encriptada)
-        const isMatch = await user.comparePassword(password);
-        if (!isMatch) return res.status(400).json({message: "Usuario o contarseña incorrectos"});
-        
-        // Generar el token JWT
-        const token = jwt.sign(
-            {userId: user._id, username: user.username ,role: user.role},
-            process.env.JWT_SECRET,
-            {expiresIn:process.env.JWT_EXPIRATION,}
-        );
-
-        const maxAge = ms(process.env.JWT_EXPIRATION);
-
-        const isProd = process.env.NODE_ENV === "production";
-
-        // Guardar el token en una cookie segura
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge
-        });
-
-        res.status(200).json({message: "Login exitoso"});
-    } catch (error) {
-        res.status(500).json({message: error.message});
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Usuario deshabilitado. Contacte al administrador.' });
     }
-};
 
-// Logout
-exports.logout = async function (req, res) {
-    try {
-        res.clearCookie("token", {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict"
-        });
-
-        res.status(200).json({message: "Sesión cerrada"});
-    } catch (error) {
-        res.status(500).json({message: error.message});
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Usuario o contraseña incorrectos' });
     }
-}
 
-exports.getCurrentUser = async function (req, res) {
+    const token = authService.generateToken(user);
+    authService.setTokenCookie(res, token);
+    res.status(200).json({ message: 'Login exitoso' });
+  }),
+
+  logout: wrapAsync(async (_req, res) => {
+    authService.clearTokenCookie(res);
+    res.status(200).json({ message: 'Sesión cerrada' });
+  }),
+
+  getCurrentUser: wrapAsync(async (req, res) => {
     const token = req.cookies?.token;
-    if (!token) return res.status(401).json({ message: "No autorizado, no hay token" });
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        return res.status(200).json({ valid: true, user: decoded });
-    } catch {
-        return res.status(401).json({ valid: false, message: "Token inválido o expirado" });
+    if (!token) {
+      return res.status(401).json({ message: 'No autorizado, no hay token' });
     }
-}
+    const decoded = authService.verifyToken(token);
+    res.status(200).json({ valid: true, user: decoded });
+  }),
+};
+
+module.exports = authController;
