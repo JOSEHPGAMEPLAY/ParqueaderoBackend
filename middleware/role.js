@@ -1,19 +1,13 @@
-const authenticatedToken = require('./auth'); // Importar el middleware de autenticación
+const { AppError } = require("../utils/errors");
 
-const roleCheck = (roles) => {
-    return (req, res, next) => {
-        // Asegúrate de que el middleware authenticatedToken ya haya agregado el usuario al request
-        if (!req.user) {
-            return res.status(401).json({ message: 'Acceso denegado. No autenticado' });
-        }
-
-        // Verificar si el rol del usuario está en el arreglo de roles permitidos
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ message: 'No tienes permisos para realizar esta acción' });
-        }
-
-        next();
-    };
+const roleCheck = (roles) => (req, res, next) => {
+  if (!req.user) {
+    throw AppError.unauthorized('Acceso denegado. No autenticado');
+  }
+  if (!roles.includes(req.user.role)) {
+    throw AppError.forbidden('No tienes permisos para realizar esta acción');
+  }
+  next();
 };
 
 module.exports = roleCheck;

@@ -1,52 +1,55 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const { connectDB } = require("./config");
-const userRoutes = require("./routes/userRoutes");
-const authRoutes = require("./routes/authRoutes");
-const parkingRoutes = require("./routes/parkingRoutes");
-const dailyParkingRecordRoutes = require("./routes/dailyParkingRecordRoutes");
-const commentParkingRecordRoutes = require('./routes/commentParkingRecordRoutes');
-const app = express();
-const port = process.env.PORT || 3000;
+const express = require('express');
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const { connectDB } = require('./config');
+const { errorHandler } = require('./utils/errors');
 
 dotenv.config();
 
-// Conexion a la base de datos
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const parkingRoutes = require('./routes/parkingRoutes');
+const dailyParkingRecordRoutes = require('./routes/dailyParkingRecordRoutes');
+const commentParkingRecordRoutes = require('./routes/commentParkingRecordRoutes');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 connectDB();
 
-// Middleware
-app.use(cors({
-  origin: (origin, callback) => {
-    
-    if (!origin) return callback(null, true);
-    if (
-      origin.endsWith(".vercel.app")
-    ) {
-      return callback(null, true);
-    }
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((s) => s.trim())
+  : [];
 
-    return callback(new Error("Not allowed by CORS: " + origin));
-  },
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.length === 0) return callback(null, true);
+      if (allowedOrigins.some((o) => origin.startsWith(o)) || origin.endsWith('.vercel.app')) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS: ' + origin));
+    },
+    credentials: true,
+  })
+);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Configutacion de Cookies
-const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
-// Rutas
-app.use("/api/dailyParkingRecord", dailyParkingRecordRoutes);
-app.use("/api/parking", parkingRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/parking/comment", commentParkingRecordRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/parking/comment', commentParkingRecordRoutes);
+app.use('/api/parking', parkingRoutes);
+app.use('/api/dailyParkingRecord', dailyParkingRecordRoutes);
 
-const PORT = port;
+app.use(errorHandler);
+
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+ console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
+
+module.exports = app;

@@ -1,12 +1,9 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const dailyParkingRecordSchema = new mongoose.Schema({
-    date: { type: Date, required: true },
-    parkedCars: [
-        { type: mongoose.Schema.Types.ObjectId, ref: "ParkingRecord" },
-    ],
-    totalEarned: { type: Number, default: 0, required: true },
+  date: { type: Date, required: true },
+  parkedCars: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ParkingRecord' }],
+  totalEarned: { type: Number, default: 0 },
 });
 
-const DailyParkingRecord = mongoose.model('DailyParkingRecord',dailyParkingRecordSchema);
-module.exports = DailyParkingRecord;
+module.exports = mongoose.model('DailyParkingRecord', dailyParkingRecordSchema);
