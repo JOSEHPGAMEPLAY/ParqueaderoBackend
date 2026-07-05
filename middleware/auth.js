@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
+const { AppError } = require('../utils/errors');
 
 const authenticateToken = (req, res, next) => {
-  const token = req.cookies?.token;
+  const token = req.cookies?.token || extractBearerToken(req);
 
   if (!token) {
-    return res.status(401).json({ message: 'Token no proporcionado' });
+    throw AppError.unauthorized('Token no proporcionado');
   }
 
   try {
@@ -12,8 +13,16 @@ const authenticateToken = (req, res, next) => {
     req.user = verified;
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Token inválido o expirado' });
+    throw AppError.unauthorized('Token inválido o expirado');
   }
 };
+
+function extractBearerToken(req) {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7);
+  }
+  return null;
+}
 
 module.exports = authenticateToken;

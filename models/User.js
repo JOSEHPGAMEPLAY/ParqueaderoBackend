@@ -17,12 +17,17 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'user', 'owner'],
+    enum: ['admin', 'user', 'owner', 'operator'],
     default: 'user',
   },
   isActive: {
     type: Boolean,
     default: false,
+  },
+  deviceMetadata: {
+    brand: String,
+    model: String,
+    os: String,
   },
 });
 
