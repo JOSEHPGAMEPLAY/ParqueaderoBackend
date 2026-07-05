@@ -1,4 +1,3 @@
-const jwt = require('jsonwebtoken');
 const authService = require('../services/authService');
 const userService = require('../services/userService');
 const { wrapAsync, AppError } = require('../utils/errors');
@@ -47,44 +46,25 @@ const authController = {
 
   registerMobile: wrapAsync(async (req, res) => {
     const { username, password, deviceBrand, deviceModel, deviceOsVersion } = req.body;
-
-    // Validar contraseña maestra
-    const MASTER_ADMIN_KEY = process.env.MASTER_ADMIN_KEY;
-    if (password !== MASTER_ADMIN_KEY) {
-      throw AppError.unauthorized('Clave única maestra inválida.');
+    if (!username || !password) {
+      throw AppError.badRequest('Usuario y contraseña son obligatorios');
     }
 
-    // Buscar o registrar operador
-    let operator = await userService.findByUsername(username);
-    if (!operator) {
-      operator = await userService.register(username, password);
-      await operator.updateOne({
-        role: 'operator',
-        isActive: true,
-        deviceMetadata: { brand: deviceBrand, model: deviceModel, os: deviceOsVersion },
-      });
-      operator = await userService.findByUsername(username);
-    } else {
-      // Actualizar dispositivo actual del operador
-      await operator.updateOne({
-        deviceMetadata: { brand: deviceBrand, model: deviceModel, os: deviceOsVersion },
-      });
-      operator = await userService.findByUsername(username);
-    }
-
-    // Generar JWT con expiración larga (365 días)
-    const token = jwt.sign(
-      { userId: operator._id, username: operator.username, role: operator.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '365d' }
-    );
+    const operator = await userService.registerMobile({
+      username,
+      password,
+      deviceBrand,
+      deviceModel,
+      deviceOsVersion,
+    });
+    const token = authService.generateMobileToken(operator);
 
     res.status(200).json({
       token,
       username: operator.username,
       role: operator.role,
       isActive: operator.isActive,
-      message: 'Cuenta registrada y dispositivo móvil vinculado de forma exitosa.',
+      message: 'Operador autenticado exitosamente.',
     });
   }),
 };

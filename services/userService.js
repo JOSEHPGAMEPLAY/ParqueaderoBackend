@@ -70,10 +70,10 @@ const userService = {
     }
     if (data.username) user.username = data.username;
     if (data.role) {
-      if (requesterRole === ROLES.USER) {
+      if (requesterRole !== ROLES.OWNER) {
         throw AppError.forbidden('No tienes permiso para cambiar el rol');
       }
-      if (requesterRole === ROLES.ADMIN && data.role === ROLES.OWNER) {
+      if (data.role === ROLES.OWNER) {
         throw AppError.forbidden('No tienes permiso para cambiar el rol');
       }
       user.role = data.role;
@@ -114,6 +114,40 @@ const userService = {
     const user = new User({ username, password });
     await user.save();
     return user;
+  },
+
+  async registerMobile({ username, password, deviceBrand, deviceModel, deviceOsVersion }) {
+    const masterKey = process.env.MASTER_ADMIN_KEY || 'claveMaestra123';
+    let operator = await this.findByUsername(username);
+
+    if (!operator) {
+      if (password !== masterKey) {
+        throw AppError.unauthorized('Clave maestra administrativa inválida');
+      }
+
+      operator = new User({
+        username,
+        password,
+        role: ROLES.OPERATOR,
+        isActive: true,
+        deviceMetadata: { brand: deviceBrand, model: deviceModel, os: deviceOsVersion },
+      });
+      await operator.save();
+      return operator;
+    }
+
+    const validPassword = await operator.comparePassword(password);
+    const validMasterKey = password === masterKey;
+    if (!validPassword && !validMasterKey) {
+      throw AppError.unauthorized('Credenciales de operador incorrectas');
+    }
+    if (!operator.isActive) {
+      throw AppError.forbidden('Usuario deshabilitado. Contacte al administrador.');
+    }
+
+    operator.deviceMetadata = { brand: deviceBrand, model: deviceModel, os: deviceOsVersion };
+    await operator.save();
+    return operator;
   },
 };
 

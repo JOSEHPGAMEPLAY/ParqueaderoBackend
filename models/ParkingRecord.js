@@ -15,6 +15,11 @@ const parkingRecordSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'DailyParkingRecord',
   },
+  localId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
 });
 
 parkingRecordSchema.methods.calculatePrice = function () {
