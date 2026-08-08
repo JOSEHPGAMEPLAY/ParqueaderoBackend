@@ -1,4 +1,5 @@
 const parkingService = require('../services/parkingService');
+const parkingSyncService = require('../services/parkingSyncService');
 const { wrapAsync } = require('../utils/errors');
 
 const parkingController = {
@@ -32,6 +33,11 @@ const parkingController = {
     const { plateNumber } = req.body;
     await parkingService.addVehicle(plateNumber);
     res.status(201).json({ message: 'Vehículo ingresado con éxito' });
+  }),
+
+  syncBatch: wrapAsync(async (req, res) => {
+    const result = await parkingSyncService.syncBatch(req.body, req.user);
+    res.status(200).json(result);
   }),
 
   calculatePrice: wrapAsync(async (req, res) => {

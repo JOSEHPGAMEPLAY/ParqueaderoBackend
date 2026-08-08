@@ -18,6 +18,11 @@ const commentParkingRecordSchema = new mongoose.Schema(
       minlength: 3,
       trim: true,
     },
+    localId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
   },
   { timestamps: true }
 );

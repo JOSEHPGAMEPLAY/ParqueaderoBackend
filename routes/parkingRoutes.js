@@ -8,6 +8,7 @@ const roleCheck = require('../middleware/role');
 router.get('/', authenticate, parkingController.getAllParkingRecords);
 router.get('/active', authenticate, parkingController.getAllAcitveParkingRecords);
 router.post('/', authenticate, parkingController.addCarToParking);
+router.post('/sync', authenticate, parkingController.syncBatch);
 router.put('/calculateprice', authenticate, parkingController.calculatePrice);
 router.put('/:id', authenticate, parkingController.updatePlateNumber);
 router.delete('/:id', authenticate, roleCheck([ROLES.ADMIN, ROLES.OWNER]), parkingController.deleteParkingRecord);

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const dailyParkingRecordSchema = new mongoose.Schema({
-  date: { type: Date, required: true },
+  date: { type: Date, required: true, unique: true },
   parkedCars: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ParkingRecord' }],
   totalEarned: { type: Number, default: 0 },
 });

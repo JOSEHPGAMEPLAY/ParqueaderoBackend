@@ -12,6 +12,14 @@ const authService = {
     );
   },
 
+  generateMobileToken(user) {
+    return jwt.sign(
+      { userId: user._id, username: user.username, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '365d' }
+    );
+  },
+
   setTokenCookie(res, token) {
     const maxAge = ms(process.env.JWT_EXPIRATION);
     res.cookie(TOKEN_COOKIE_NAME, token, {
