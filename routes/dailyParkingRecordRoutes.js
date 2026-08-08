@@ -1,23 +1,14 @@
-const express= require('express');
+const express = require('express');
 const router = express.Router();
 const parkingController = require('../controllers/parkingController');
-const authenticateToken = require('../middleware/auth');
+const authenticate = require('../middleware/auth');
+const { ROLES } = require('../constants');
 const roleCheck = require('../middleware/role');
 
-// Obtener los datos de los registros diarios
-router.get('/', authenticateToken, parkingController.getAllDailyParkingRecords);
-
-// Obtener todos los registros de parqueo de un regitro especifico
-router.get('/:id', authenticateToken, parkingController.getParkingRecordsById);
-
-// Crear un registro
-router.post('/', authenticateToken, parkingController.addDailyParking);
-
-// Eliminar un registro diario
-router.delete('/:id', authenticateToken, roleCheck(['admin', 'owner']), parkingController.deleteDailyParkingRecord);
-
-// Ruta para calcular y actualizar el total ganado para un registro diario de parqueo
-router.put("/calculatetotalearned/:id", authenticateToken, parkingController.calculateTotalEarned);
-
+router.get('/', authenticate, parkingController.getAllDailyParkingRecords);
+router.get('/:id', authenticate, parkingController.getParkingRecordsById);
+router.post('/', authenticate, parkingController.addDailyParking);
+router.delete('/:id', authenticate, roleCheck([ROLES.ADMIN, ROLES.OWNER]), parkingController.deleteDailyParkingRecord);
+router.put('/calculatetotalearned/:id', authenticate, parkingController.calculateTotalEarned);
 
 module.exports = router;

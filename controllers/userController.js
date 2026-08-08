@@ -1,95 +1,70 @@
-const User = require('../models/User');
-const bcrypt = require('bcrypt');
+const userService = require('../services/userService');
+const authService = require('../services/authService');
+const { wrapAsync } = require('../utils/errors');
 
-// Controlador para cambiar la contraseña de un usuario
-const changePassword = async (req, res) => {
+const userController = {
+  getAllUsers: wrapAsync(async (_req, res) => {
+    const users = await userService.getAll();
+    res.status(200).json({ users });
+  }),
+
+  changePassword: wrapAsync(async (req, res) => {
     const { userId } = req.params;
     const { oldPassword, newPassword } = req.body;
+    const requesterId = req.user.userId;
+    await userService.changePassword(userId, oldPassword, newPassword, requesterId);
+    res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
+  }),
 
-    try {
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
+  resetPassword: wrapAsync(async (req, res) => {
+    const { userId } = req.params;
+    const { newPassword } = req.body;
+    const requesterRole = req.user.role;
+    const requesterId = req.user.userId;
 
-        // Comparar la contraseña actual
-        const isMatch = await user.comparePassword(oldPassword);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Contraseña actual incorrecta' });
-        }
+    const targetUser = await userService.findById(userId);
+    await userService.resetPassword(targetUser, requesterRole, requesterId);
 
-        // Encriptar la nueva contraseña
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-        user.password = hashedPassword;
+    const hashed = await userService.hashPassword(newPassword);
+    targetUser.password = hashed;
+    await targetUser.save();
 
-        // Guardar el usuario con la nueva contraseña
-        await user.save();
-        res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error al actualizar la contraseña' });
-    }
-};
+    res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
+  }),
 
-// Controlador para actualizar los datos del usuario
-const updateUser = async (req, res) => {
+  updateUser: wrapAsync(async (req, res) => {
     const { userId } = req.params;
     const { username, role } = req.body;
-
-    try {
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-
-        // Actualizar los datos del usuario
-        if (username) user.username = username;
-        if (role) user.role = role;
-
-        // Guardar los cambios
-        await user.save();
-        res.status(200).json({ message: 'Usuario actualizado exitosamente', user });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error al actualizar el usuario' });
+    const requesterId = req.user.userId;
+    const requesterRole = req.user.role;
+    const user = await userService.update(userId, { username, role }, requesterId, requesterRole);
+    if (requesterId === userId) {
+      const token = authService.generateToken(user);
+      authService.setTokenCookie(res, token);
     }
-};
+    res.status(200).json({ message: 'Usuario actualizado exitosamente', user });
+  }),
 
-// Controlador para obtener todos los usuarios
-const getAllUsers = async (req, res) => {
-    try {
-        const users = await User.find();
-        res.status(200).json({ users });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error al obtener los usuarios' });
-    }
-};
-
-// Controlador para activar o desactivar un usuario
-const toggleUserActivation = async (req, res) => {
+  deleteUser: wrapAsync(async (req, res) => {
     const { userId } = req.params;
-    const { isActive } = req.body;
+    const requesterRole = req.user.role;
+    const requesterId = req.user.userId;
+    await userService.deleteUser(userId, requesterRole, requesterId);
+    res.status(200).json({ message: 'Usuario eliminado exitosamente' });
+  }),
 
-    try {
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
+  toggleUserActivation: wrapAsync(async (req, res) => {
+    const { userId } = req.params;
+    const requesterRole = req.user.role;
 
-        // Cambiar el estado de activación
-        const updatedUser = await User.toggleUserStatus(userId, isActive);
-        res.status(200).json({ message: `Usuario ${isActive ? 'activado' : 'desactivado'} correctamente`, user: updatedUser });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error al actualizar el estado del usuario' });
-    }
+    const targetUser = await userService.findById(userId);
+    const updatedUser = await userService.toggleActivation(targetUser, requesterRole);
+
+    res.status(200).json({
+      message: `Usuario ${updatedUser.isActive ? 'activado' : 'desactivado'} correctamente`,
+      user: updatedUser,
+    });
+  }),
 };
 
-module.exports = {
-    changePassword,
-    updateUser,
-    getAllUsers,
-    toggleUserActivation
-};
+module.exports = userController;
