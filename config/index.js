@@ -1,6 +1,4 @@
-require('dotenv').config(); // Carga las variables de entorno desde el archivo .env
+require('dotenv').config();
 const connectDB = require('./db');
 
-module.exports = {
-    connectDB,
-};
+module.exports = { connectDB };

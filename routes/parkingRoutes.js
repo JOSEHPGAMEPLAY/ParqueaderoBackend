@@ -1,25 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const parkingController = require('../controllers/parkingController');
-const authenticateToken = require('../middleware/auth');
+const authenticate = require('../middleware/auth');
+const { ROLES } = require('../constants');
 const roleCheck = require('../middleware/role');
 
-// Obtener todos los registros de parqueo
-router.get('/', authenticateToken, parkingController.getAllParkingRecords);
-
-// Obtener todos los registros de parqueo
-router.get('/active', authenticateToken, parkingController.getAllAcitveParkingRecords);
-
-// Agregar un vehiculo al parqueadero
-router.post('/',authenticateToken, parkingController.addCarToParking);
-
-// Calcular el precio al salir del parqueadero
-router.put('/calculateprice', authenticateToken, parkingController.calculatePrice,);
-
-// Actualizar la placa de un vehiculo 
-router.put('/:id', authenticateToken, parkingController.updatePlateNumber);
-
-// Eliminar un registro de parqueo
-router.delete('/:id',authenticateToken, roleCheck(['admin', 'owner']), parkingController.deleteParkingRecord);
+router.get('/', authenticate, parkingController.getAllParkingRecords);
+router.get('/active', authenticate, parkingController.getAllAcitveParkingRecords);
+router.post('/', authenticate, parkingController.addCarToParking);
+router.post('/sync', authenticate, parkingController.syncBatch);
+router.put('/calculateprice', authenticate, parkingController.calculatePrice);
+router.put('/:id', authenticate, parkingController.updatePlateNumber);
+router.delete('/:id', authenticate, roleCheck([ROLES.ADMIN, ROLES.OWNER]), parkingController.deleteParkingRecord);
 
 module.exports = router;

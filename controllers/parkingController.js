@@ -1,273 +1,75 @@
-const { getColombiaDateAndTime } = require('../utils/dateUtils');
-const ParkingRecord = require("../models/ParkingRecord");
-const DailyParkingRecord = require("../models/DailyParkingRecord");
+const parkingService = require('../services/parkingService');
+const parkingSyncService = require('../services/parkingSyncService');
+const { wrapAsync } = require('../utils/errors');
 
-// Obtiene todos los vehiculos parqueados
-exports.getAllParkingRecords = async (req, res) => {
-    try {
-        const records = await ParkingRecord.find()
-            .sort({ entryTime: -1 });;
-        res.json(records);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+const parkingController = {
+  getAllParkingRecords: wrapAsync(async (_req, res) => {
+    const records = await parkingService.getAllActive();
+    res.json(records);
+  }),
+
+  getAllAcitveParkingRecords: wrapAsync(async (_req, res) => {
+    const records = await parkingService.getAllActive();
+    res.json(records);
+  }),
+
+  getAllDailyParkingRecords: wrapAsync(async (_req, res) => {
+    const records = await parkingService.getAllDailyRecords();
+    res.json(records);
+  }),
+
+  getParkingRecordsById: wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const vehicles = await parkingService.getVehiclesByDailyRecord(id);
+    res.status(200).json(vehicles);
+  }),
+
+  addDailyParking: wrapAsync(async (_req, res) => {
+    const record = await parkingService.getOrCreateDailyRecord();
+    res.status(201).json({ message: 'Registro creado con éxito', _id: record._id });
+  }),
+
+  addCarToParking: wrapAsync(async (req, res) => {
+    const { plateNumber } = req.body;
+    await parkingService.addVehicle(plateNumber);
+    res.status(201).json({ message: 'Vehículo ingresado con éxito' });
+  }),
+
+  syncBatch: wrapAsync(async (req, res) => {
+    const result = await parkingSyncService.syncBatch(req.body, req.user);
+    res.status(200).json(result);
+  }),
+
+  calculatePrice: wrapAsync(async (req, res) => {
+    const { plateNumber, isFree } = req.body;
+    const price = await parkingService.calculatePrice(plateNumber, isFree);
+    res.status(200).json({ message: 'Precio calculado con éxito', price });
+  }),
+
+  deleteParkingRecord: wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    await parkingService.deleteParkingRecord(id);
+    res.status(200).json({ message: 'Registro de parqueo eliminado con éxito' });
+  }),
+
+  deleteDailyParkingRecord: wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    await parkingService.deleteDailyRecord(id);
+    res.status(200).json({ message: 'Registro de parqueo eliminado con éxito' });
+  }),
+
+  calculateTotalEarned: wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const totalEarned = await parkingService.calculateTotalEarned(id);
+    res.status(200).json({ message: 'Total ganado calculado y actualizado con éxito', totalEarned });
+  }),
+
+  updatePlateNumber: wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const { plateNumber } = req.body;
+    const record = await parkingService.updatePlateNumber(id, plateNumber);
+    res.status(200).json({ message: 'Placa de vehículo actualizada con éxito', parkingRecord: record });
+  }),
 };
 
-// Obtiene todos los registros activos de parqueo
-exports.getAllAcitveParkingRecords = async (req, res) => {
-    try {
-        const records = await ParkingRecord.find({exitTime:null})
-            .sort({ entryTime: -1 });
-        res.json(records);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Obtiene todos los registros diarios
-exports.getAllDailyParkingRecords = async (req, res) => {
-    try {
-        const records = await DailyParkingRecord.find()
-            .sort({ date: -1 });
-        res.json(records);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Obtiene los vehiculos parqueados en un registro
-exports.getParkingRecordsById = async (req, res) => {
-    try {
-        // Obtener el ID del registro diario de parqueo desde la solicitud
-        const { id } = req.params;
-
-        // Buscar el registro diario de parqueo y cargar toda la información de los vehiculos parqueados
-        const parkingRecords = await DailyParkingRecord.findById(id).populate(
-            "parkedCars"
-        );
-
-        if (!parkingRecords)
-            return res.status(404).json({ message: "Registro no encontrado" });
-
-        res.status(200).json(parkingRecords.parkedCars);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Elimina un parqueo
-exports.deleteParkingRecord = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const parkingRecord = await ParkingRecord.findById(id);
-        
-        if (!parkingRecord)
-            return res
-                .status(404)
-                .json({ message: "Registro de parqueo no encontrado" });
-        const dailyRecordId = parkingRecord.dailyParkingRecord;
-        // Actualizar el registro diario para eliminar el vehiculo estacionado
-        await DailyParkingRecord.findByIdAndUpdate(
-            dailyRecordId,
-            { $pull: { parkedCars: id } },
-            { new: true } // Para obtener el documento actualizado después de la actualización
-        );
-        await ParkingRecord.findByIdAndDelete(id);
-        res.status(200).json({
-            message: "Regitro de parqueo eliminado con éxito",
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Elimina un registro
-exports.deleteDailyParkingRecord = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const dailyParkingRecord = await DailyParkingRecord.findById(
-            id
-        ).populate("parkedCars");
-
-        if (!dailyParkingRecord)
-            return res
-                .status(404)
-                .json({ message: "Registro de parqueo no encontrado" });
-
-        for (const parkingRecord of dailyParkingRecord.parkedCars) {
-            await ParkingRecord.findByIdAndDelete(parkingRecord._id);
-        }
-
-        await DailyParkingRecord.findByIdAndDelete(id);
-
-        res.status(200).json({
-            message: "Registro de parqueo eliminado con exito",
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Agrega un registro
-exports.addDailyParking = async (req, res) => {
-    try {
-        const { currentDate } = getColombiaDateAndTime();
-
-        // Buscar un registro diario basado en la fecha actual
-        let dailyParkingRecord = await DailyParkingRecord.findOne({
-            date: currentDate,
-        });
-
-        if (!dailyParkingRecord) {
-            dailyParkingRecord = new DailyParkingRecord({
-                date: currentDate,
-            });
-        }
-        await dailyParkingRecord.save();
-
-        res.status(201).json({
-            message: "Registro creado con éxito",
-            _id: dailyParkingRecord._id,
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Agrega un vehiculo al parqueadero
-exports.addCarToParking = async (req, res) => {
-    try {
-        const { plateNumber } = req.body;
-
-        const { entryTime, currentDate } = getColombiaDateAndTime();
-    
-        // Buscar un registro diario basado en la fecha actual
-        let dailyParkingRecord = await DailyParkingRecord.findOne({
-            date: currentDate,
-        });
-
-        if (!dailyParkingRecord) {
-            dailyParkingRecord = new DailyParkingRecord({
-                date: currentDate,
-            });
-        }
-
-        // Buscar si ya ingreso esa placa y la hora de salida es diferente de null
-        let parkingRecord = await ParkingRecord.findOne({
-            plateNumber: plateNumber,
-            exitTime: null,
-        });
-
-        if (parkingRecord)
-            return res.status(404).json({ message: "El vehiculo ya ingreso" });
-
-        parkingRecord = new ParkingRecord({
-            plateNumber,
-            entryTime: entryTime,
-            dailyParkingRecord: dailyParkingRecord._id,
-        });
-
-        dailyParkingRecord.parkedCars.push(parkingRecord);
-        await parkingRecord.save();
-        await dailyParkingRecord.save();
-
-        res.status(201).json({ message: "vehiculo ingresado con éxito" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Calcular el precio al salir del parqueadero
-exports.calculatePrice = async (req, res) => {
-    try {
-        const { plateNumber, isFree } = req.body;
-
-        const parkingRecord = await ParkingRecord.findOne({
-            plateNumber,
-            exitTime: null,
-        });
-
-        if (!parkingRecord) {
-            return res
-                .status(404)
-                .json({ message: "El vehiculo no se ah encontrado" });
-        }
-
-        const { entryTime: exitTime } = getColombiaDateAndTime();
-        
-        parkingRecord.exitTime = exitTime;
-
-        parkingRecord.isFree = isFree;
-
-        await parkingRecord.save();
-
-        const price = parkingRecord.price;
-
-        res.status(200).json({ message: "Precio calculado con exito", price });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Calcula el total ganado
-exports.calculateTotalEarned = async (req, res) => {
-    try {
-        // Obtener el ID del registro diario de parqueo desde la solicitud
-        const { id } = req.params;
-
-        // Buscar el registro diario de parqueo por su ID y poblado con los registros de estacionamiento
-        const dailyParkingRecord = await DailyParkingRecord.findById(
-            id
-        ).populate("parkedCars");
-
-        if (!dailyParkingRecord) {
-            return res
-                .status(404)
-                .json({ message: "Registro diario de parqueo no encontrado" });
-        }
-
-        // Calcular el total ganado sumando los precios de los elementos en parkedCars
-        let totalEarned = 0;
-        for (const parkingRecord of dailyParkingRecord.parkedCars) {
-            totalEarned += parkingRecord.price;
-        }
-
-        // Actualizar el campo totalEarned en el registro diario de parqueo
-        dailyParkingRecord.totalEarned = totalEarned;
-        await dailyParkingRecord.save();
-
-        res.status(200).json({
-            message: "Total ganado calculado y actualizado con éxito",
-            totalEarned,
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Actualizar la placa del vehiculo
-exports.updatePlateNumber = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { plateNumber } = req.body;
-
-        const parkingRecord = await ParkingRecord.findOne({
-            _id: id,
-            exitTime: null,
-        });
-        if (!parkingRecord)
-            return res.status(404).json({ message: "Registro no encontrado" });
-
-        parkingRecord.plateNumber = plateNumber;
-
-        await parkingRecord.save();
-
-        res.status(200).json({
-            message: "Placa de vehiculo actualizada con exito",
-            parkingRecord,
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+module.exports = parkingController;
