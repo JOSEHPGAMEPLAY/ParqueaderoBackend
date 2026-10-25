@@ -1,11 +1,29 @@
 const ParkingRecord = require('../models/ParkingRecord');
 const DailyParkingRecord = require('../models/DailyParkingRecord');
 const TimeUtils = require('../utils/time');
+const configService = require('./configService');
 const { AppError } = require('../utils/errors');
 
 const parkingService = {
   async getAllActive() {
     return ParkingRecord.find({ exitTime: null }).sort({ entryTime: -1 });
+  },
+
+  async getActiveForTeam() {
+    const records = await ParkingRecord.find({ exitTime: null })
+      .select(
+        'plateNumber entryTime exitTime price isFree hasTicket localId operatorName deviceModel createdAt updatedAt'
+      )
+      .sort({ entryTime: 1 })
+      .lean();
+
+    return records.map((record) => ({
+      ...record,
+      entryTimeMillis: new Date(record.entryTime).getTime(),
+      updatedAtMillis: record.updatedAt
+        ? new Date(record.updatedAt).getTime()
+        : null,
+    }));
   },
 
   async getAllDailyRecords() {
@@ -19,7 +37,8 @@ const parkingService = {
   },
 
   async getOrCreateDailyRecord() {
-    const today = TimeUtils.todayMidnight();
+    const config = await configService.getConfig();
+    const today = TimeUtils.startOfDayInZone(new Date(), config.timezone);
     let record = await DailyParkingRecord.findOne({ date: today });
     if (!record) {
       record = new DailyParkingRecord({ date: today });
@@ -28,7 +47,7 @@ const parkingService = {
     return record;
   },
 
-  async addVehicle(plateNumber) {
+  async addVehicle(plateNumber, { user, hasTicket = true } = {}) {
     const existing = await ParkingRecord.findOne({ plateNumber, exitTime: null });
     if (existing) throw AppError.conflict('El vehículo ya ingresó');
 
@@ -37,20 +56,33 @@ const parkingService = {
       plateNumber,
       entryTime: TimeUtils.now(),
       dailyParkingRecord: dailyRecord._id,
+      hasTicket,
+      createdBy: user?.userId || null,
+      operatorName: user?.username || null,
+      deviceModel: 'web',
     });
 
     dailyRecord.parkedCars.push(parkingRecord);
     await parkingRecord.save();
     await dailyRecord.save();
+    return parkingRecord;
   },
 
-  async calculatePrice(plateNumber, isFree = false) {
+  async calculatePrice(plateNumber, { isFree = false, hasTicket } = {}) {
     const parkingRecord = await ParkingRecord.findOne({ plateNumber, exitTime: null });
     if (!parkingRecord) throw AppError.notFound('El vehículo no se ha encontrado');
 
     parkingRecord.exitTime = TimeUtils.now();
-    parkingRecord.isFree = isFree;
+    parkingRecord.isFree = Boolean(isFree);
+    if (hasTicket !== undefined) {
+      parkingRecord.hasTicket = Boolean(hasTicket);
+    }
     await parkingRecord.save();
+
+    // Mantiene el total del día coherente cuando el cobro llega desde el móvil.
+    if (parkingRecord.dailyParkingRecord) {
+      await this.calculateTotalEarned(parkingRecord.dailyParkingRecord);
+    }
 
     return parkingRecord.price;
   },

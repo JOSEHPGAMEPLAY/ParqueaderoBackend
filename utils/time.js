@@ -7,7 +7,12 @@ const TIMEZONE = process.env.TIMEZONE || 'UTC';
 const TimeUtils = {
   now: () => moment().tz(TIMEZONE).toDate() ,
 
+  nowInZone: (timezone = TIMEZONE) => moment().tz(timezone).toDate(),
+
   todayMidnight: () => moment().tz(TIMEZONE).startOf('day').toDate(),
+
+  startOfDayInZone: (date, timezone = TIMEZONE) =>
+    moment.tz(date, timezone).startOf('day').toDate(),
 
   format: (date, format = 'YYYY-MM-DD HH:mm:ss') =>
     moment(date).tz(TIMEZONE).format(format),
