@@ -27,7 +27,9 @@ para operar sin conexión. El rol creado es `operator`.
 }
 ```
 
-`password` debe coincidir con `MASTER_ADMIN_KEY`.
+`password` debe coincidir con `MASTER_ADMIN_KEY` cuando el operador es nuevo. Si el usuario ya
+existe, también se acepta su contraseña habitual. Si `MASTER_ADMIN_KEY` no está configurada en el
+servidor, el endpoint responde **500** (no hay clave por defecto).
 
 **200 OK**
 
@@ -37,7 +39,7 @@ para operar sin conexión. El rol creado es `operator`.
   "username": "jose_operador_01",
   "role": "operator",
   "isActive": true,
-  "message": "Cuenta registrada y dispositivo móvil vinculado de forma exitosa."
+  "message": "Operador autenticado exitosamente."
 }
 ```
 

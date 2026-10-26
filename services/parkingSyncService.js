@@ -170,10 +170,10 @@ const parkingSyncService = {
     parkingDoc.entryTime = toDate(record.entryTime, 'entryTime');
     parkingDoc.dailyParkingRecord = dailyRecordId;
 
-    if (typeof record.hasTicket === 'boolean') {
+    if (typeof record.hasTicket === 'boolean' && !alreadyClosed) {
       parkingDoc.hasTicket = record.hasTicket;
     }
-    if (typeof record.isFree === 'boolean') {
+    if (typeof record.isFree === 'boolean' && !alreadyClosed) {
       parkingDoc.isFree = record.isFree;
     }
 
