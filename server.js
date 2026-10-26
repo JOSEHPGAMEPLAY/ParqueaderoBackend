@@ -13,6 +13,8 @@ const userRoutes = require('./routes/userRoutes');
 const parkingRoutes = require('./routes/parkingRoutes');
 const dailyParkingRecordRoutes = require('./routes/dailyParkingRecordRoutes');
 const commentParkingRecordRoutes = require('./routes/commentParkingRecordRoutes');
+const configRoutes = require('./routes/configRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +44,8 @@ app.use(cookieParser());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/config', configRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/parking/comment', commentParkingRecordRoutes);
 app.use('/api/parking', parkingRoutes);
 app.use('/api/dailyParkingRecord', dailyParkingRecordRoutes);

@@ -1,0 +1,62 @@
+name: CI Backend
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sintaxis:
+    name: Verificar sintaxis (node --check)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar sintaxis de todos los modulos
+        shell: bash
+        run: |
+          set -eo pipefail
+          shopt -s nullglob
+
+          archivos=(
+            server.js
+            routes/*.js
+            controllers/*.js
+            services/*.js
+            models/*.js
+            utils/*.js
+            config/*.js
+            constants/*.js
+            middleware/*.js
+          )
+
+          total=0
+          for archivo in "${archivos[@]}"; do
+            node --check "$archivo"
+            echo "ok: $archivo"
+            total=$((total + 1))
+          done
+
+          if [ "$total" -eq 0 ]; then
+            echo "No se encontro ningun archivo para verificar." >&2
+            exit 1
+          fi
+
+          echo "Archivos verificados: $total"

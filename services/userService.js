@@ -70,10 +70,10 @@ const userService = {
     }
     if (data.username) user.username = data.username;
     if (data.role) {
-      if (requesterRole !== ROLES.OWNER) {
-        throw AppError.forbidden('No tienes permiso para cambiar el rol');
-      }
-      if (data.role === ROLES.OWNER) {
+      const canAssignRole =
+        (requesterRole === ROLES.OWNER && user.role !== ROLES.OWNER) ||
+        (requesterRole === ROLES.ADMIN && user.role === ROLES.USER);
+      if (!canAssignRole || data.role === ROLES.OWNER) {
         throw AppError.forbidden('No tienes permiso para cambiar el rol');
       }
       user.role = data.role;
@@ -117,7 +117,13 @@ const userService = {
   },
 
   async registerMobile({ username, password, deviceBrand, deviceModel, deviceOsVersion }) {
-    const masterKey = process.env.MASTER_ADMIN_KEY || 'claveMaestra123';
+    const masterKey = process.env.MASTER_ADMIN_KEY;
+    if (!masterKey) {
+      throw new AppError(
+        'La clave maestra no está configurada en el servidor (MASTER_ADMIN_KEY)',
+        500
+      );
+    }
     let operator = await this.findByUsername(username);
 
     if (!operator) {
