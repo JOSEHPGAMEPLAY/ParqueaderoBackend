@@ -7,6 +7,7 @@ const roleCheck = require('../middleware/role');
 
 router.get('/', authenticate, parkingController.getAllParkingRecords);
 router.get('/active', authenticate, parkingController.getAllAcitveParkingRecords);
+router.get('/team', authenticate, parkingController.getTeamActiveRecords);
 router.post('/', authenticate, parkingController.addCarToParking);
 router.post('/sync', authenticate, parkingController.syncBatch);
 router.put('/calculateprice', authenticate, parkingController.calculatePrice);

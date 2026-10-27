@@ -13,6 +13,11 @@ const parkingController = {
     res.json(records);
   }),
 
+  getTeamActiveRecords: wrapAsync(async (_req, res) => {
+    const records = await parkingService.getActiveForTeam();
+    res.json({ records });
+  }),
+
   getAllDailyParkingRecords: wrapAsync(async (_req, res) => {
     const records = await parkingService.getAllDailyRecords();
     res.json(records);
@@ -30,8 +35,11 @@ const parkingController = {
   }),
 
   addCarToParking: wrapAsync(async (req, res) => {
-    const { plateNumber } = req.body;
-    await parkingService.addVehicle(plateNumber);
+    const { plateNumber, hasTicket = true } = req.body;
+    await parkingService.addVehicle(plateNumber, {
+      user: req.user,
+      hasTicket: Boolean(hasTicket),
+    });
     res.status(201).json({ message: 'Vehículo ingresado con éxito' });
   }),
 
@@ -41,8 +49,11 @@ const parkingController = {
   }),
 
   calculatePrice: wrapAsync(async (req, res) => {
-    const { plateNumber, isFree } = req.body;
-    const price = await parkingService.calculatePrice(plateNumber, isFree);
+    const { plateNumber, isFree, hasTicket } = req.body;
+    const price = await parkingService.calculatePrice(plateNumber, {
+      isFree: Boolean(isFree),
+      hasTicket,
+    });
     res.status(200).json({ message: 'Precio calculado con éxito', price });
   }),
 
