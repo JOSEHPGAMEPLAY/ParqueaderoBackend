@@ -6,7 +6,7 @@ API Express 4 + Mongoose que se despliega como funcion serverless en Vercel. Est
 
 | Requisito | Detalle |
 |---|---|
-| Node.js | 22 (verificado localmente con v22.14.0). `package.json` no declara `engines`, asi que la version se elige en el panel de Vercel. |
+| Node.js | 24 LTS (Krypton), verificado con v24.22.1. `package.json` declara `engines.node: "24.x"`, asi que Vercel selecciona Node 24 automaticamente. |
 | MongoDB | Cluster accesible desde internet (Atlas) con el host del cluster en la cadena de conexion y `0.0.0.0/0` en Network Access, o el rango de salida de Vercel. |
 | Cuenta Vercel | Proyecto con el repositorio conectado. |
 | `package-lock.json` | Versionado. La instalacion en Vercel respeta el lockfile. |
@@ -38,7 +38,7 @@ Notas que afectan la operacion:
 ## Publicacion en Vercel
 
 1. Importar el repositorio del backend en Vercel. Framework preset: **Other**. Directorio raiz: la raiz del repositorio.
-2. En Settings, General, Node.js Version, seleccionar **22.x**.
+2. En Settings, General, Node.js Version, seleccionar **24.x**. `engines.node` en `package.json` ya lo fija; el panel debe coincidir.
 3. Cargar todas las variables de la tabla anterior en Production y, con valores distintos, en Preview y Development. Cargarlas antes del primer deploy: en Vercel solo aplican a despliegues nuevos.
 4. Verificar que `CLIENT_URL` apunte al dominio real del frontend y que no quede vacia.
 5. Desplegar desde la rama `main`. `vercel.json` ya define el runtime y el enrutamiento:
